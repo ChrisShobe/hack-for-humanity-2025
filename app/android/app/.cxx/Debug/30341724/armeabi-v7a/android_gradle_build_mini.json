@@ -1,0 +1,20 @@
+{
+  "buildFiles": [
+    "/Users/shaunak/development/flutter/packages/flutter_tools/gradle/src/main/groovy/CMakeLists.txt"
+  ],
+  "cleanCommandsComponents": [
+    [
+      "/Users/shaunak/Library/Android/sdk/cmake/3.22.1/bin/ninja",
+      "-C",
+      "/Users/shaunak/Documents/Projects/hack-for-humanity-2025/app/android/app/.cxx/Debug/30341724/armeabi-v7a",
+      "clean"
+    ]
+  ],
+  "buildTargetsCommandComponents": [
+    "/Users/shaunak/Library/Android/sdk/cmake/3.22.1/bin/ninja",
+    "-C",
+    "/Users/shaunak/Documents/Projects/hack-for-humanity-2025/app/android/app/.cxx/Debug/30341724/armeabi-v7a",
+    "{LIST_OF_TARGETS_TO_BUILD}"
+  ],
+  "libraries": {}
+}
