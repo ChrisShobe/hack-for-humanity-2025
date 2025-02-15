@@ -8,7 +8,6 @@ import 'package:app/background.dart'; // Import the background task file
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
   const androidConfig = FlutterBackgroundAndroidConfig(
     notificationTitle: "Background Task",
     notificationText: "Listening for sounds...",
@@ -22,10 +21,6 @@ void main() async {
   if (hasPermissions) {
     await FlutterBackground.enableBackgroundExecution();
   }
-
-void main() {
-  
-  runApp(MyApp());
 }
 
 class MyApp extends StatelessWidget {

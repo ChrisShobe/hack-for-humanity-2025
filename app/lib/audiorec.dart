@@ -13,9 +13,7 @@ class AudioRecorderService {
 
       if (directory != null) {
         // Construct the path where you want to save the audio file
-        final path = '${directory.path}/recording.wav'; // Full path with file name
-
-        // Check for microphone permission before starting recording
+        final path = '${directory.path}/recording.wav'; 
         if (await _recorder.hasPermission()) {
           // Create the RecordConfig object (you can add more settings to the config if needed)
           final config = RecordConfig(
