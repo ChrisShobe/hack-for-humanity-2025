@@ -127,3 +127,11 @@ print(f"Test Accuracy: {test_acc * 100:.2f}%")
 model.save('urban_sound_cnn_model.h5')
 print("Model saved in normal TensorFlow format.")
 
+# Convert the model to TFLite format
+converter = tf.lite.TFLiteConverter.from_keras_model(model)
+tflite_model = converter.convert()
+
+# Save the TFLite model 
+with open('urban_sound_cnn_model.tflite', 'wb') as f:
+    f.write(tflite_model)
+print("Model saved in TFLite format.")
