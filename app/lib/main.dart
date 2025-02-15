@@ -31,11 +31,15 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+  List<bool> isSelected1 = [true, false];
+  List<bool> isSelected2 = [true, false];
+  List<bool> isSelected3 = [true, false];
 
-  void _incrementCounter() {
+  void _toggleSelection(List<bool> list, int index) {
     setState(() {
-      _counter++;
+      for (int i = 0; i < list.length; i++) {
+        list[i] = (i == index);
+      }
     });
   }
 
@@ -57,12 +61,62 @@ class _MyHomePageState extends State<MyHomePage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            const Text(
-              'You have pushed the button this many times:',
+            const Text('Do you agree?'),
+            const SizedBox(height: 10),
+            ToggleButtons(
+              isSelected: isSelected1,
+              onPressed: (index) => _toggleSelection(isSelected1, index),
+              borderRadius: BorderRadius.circular(10),
+              selectedColor: Colors.white,
+              fillColor: Colors.deepPurple,
+              children: const <Widget>[
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 16.0),
+                  child: Text('Yes'),
+                ),
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 16.0),
+                  child: Text('No'),
+                ),
+              ],
             ),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
+
+            const SizedBox(height: 10),
+            ToggleButtons(
+              isSelected: isSelected2,
+              onPressed: (index) => _toggleSelection(isSelected2, index),
+              borderRadius: BorderRadius.circular(10),
+              selectedColor: Colors.white,
+              fillColor: Colors.deepPurple,
+              children: const <Widget>[
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 16.0),
+                  child: Text('Yes'),
+                ),
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 16.0),
+                  child: Text('No'),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 10),
+            ToggleButtons(
+              isSelected: isSelected3,
+              onPressed: (index) => _toggleSelection(isSelected3, index),
+              borderRadius: BorderRadius.circular(10),
+              selectedColor: Colors.white,
+              fillColor: Colors.deepPurple,
+              children: const <Widget>[
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 16.0),
+                  child: Text('Yes'),
+                ),
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 16.0),
+                  child: Text('No'),
+                ),
+              ],
             ),
             const SizedBox(height: 20), // Add some space between the counter and button
             ElevatedButton(
@@ -71,11 +125,6 @@ class _MyHomePageState extends State<MyHomePage> {
             ),
           ],
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
       ),
     );
   }
