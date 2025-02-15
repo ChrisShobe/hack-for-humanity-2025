@@ -12,7 +12,7 @@ from tensorflow.keras import layers, models
 import warnings
 import joblib
 
-warning.filterwarnings('ignore')
+warnings.filterwarnings('ignore')
 
 csv_path = ""
 audio_path = ""
