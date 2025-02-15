@@ -35,9 +35,7 @@ with tqdm(total=total_files, desc="Processing Audio Files") as pbar:
         
         # Construct file path
         file_path = os.path.join(audio_path, f"fold{fold}", file_name)
-        
-        if os.path.exists(file_path):  # Ensure the file exists
-            
+        if os.path.exists(file_path):  # Ensure the file exists 
             audio, sr = librosa.load(file_path, sr=None)  # Load audio
             audio_length = len(audio)  # Length of audio array
             if audio_length <= 0:
