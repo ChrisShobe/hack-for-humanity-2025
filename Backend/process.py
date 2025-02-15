@@ -12,10 +12,10 @@ from tensorflow.keras import layers, models
 import warnings
 import joblib
 
-warning.filterwarnings('ignore')
+warnings.filterwarnings('ignore')
 
-csv_path = ""
-audio_path = ""
+csv_path = "C:/Users/cutie/.cache/kagglehub/datasets/rupakroy/urban-sound-8k/versions/1/UrbanSound8K.csv"
+audio_path = "C:/Users/cutie/.cache/kagglehub/datasets/rupakroy/urban-sound-8k/versions/1/UrbanSound8K/UrbanSound8K/audio"
 
 #Load CSV 
 df_csv = pd.read_csv(csv_path)
