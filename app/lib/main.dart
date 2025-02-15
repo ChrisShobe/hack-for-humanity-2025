@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:vibration/vibration.dart'; // Import the vibration package
+import 'audiorec.dart';  // Import the audio recorder service
 
 void main() {
   runApp(const MyApp());
@@ -35,6 +36,9 @@ class _MyHomePageState extends State<MyHomePage> {
   List<bool> isSelected2 = [true, false];
   List<bool> isSelected3 = [true, false];
 
+  final AudioRecorderService _audioRecorder = AudioRecorderService(); // Initialize audio recorder
+  bool isRecording = false;
+
   void _toggleSelection(List<bool> list, int index) {
     setState(() {
       for (int i = 0; i < list.length; i++) {
@@ -48,6 +52,17 @@ class _MyHomePageState extends State<MyHomePage> {
     if (await Vibration.hasVibrator() ?? false) {
       Vibration.vibrate(duration: 500); // Vibrates for 500 milliseconds
     }
+  }
+
+  // Start/Stop recording function
+  Future<void> _toggleRecording() async {
+    if (isRecording) {
+      final path = await _audioRecorder.stopRecording();
+      print('Recording saved at: $path');
+    } else {
+      await _audioRecorder.startRecording();
+    }
+    setState(() => isRecording = !isRecording);  // Toggle recording state
   }
 
   @override
@@ -80,7 +95,6 @@ class _MyHomePageState extends State<MyHomePage> {
                 ),
               ],
             ),
-
             const SizedBox(height: 10),
             ToggleButtons(
               isSelected: isSelected2,
@@ -99,7 +113,6 @@ class _MyHomePageState extends State<MyHomePage> {
                 ),
               ],
             ),
-
             const SizedBox(height: 10),
             ToggleButtons(
               isSelected: isSelected3,
@@ -122,6 +135,11 @@ class _MyHomePageState extends State<MyHomePage> {
             ElevatedButton(
               onPressed: _vibratePhone, // Vibrates the phone on button press
               child: const Text('Vibrate Phone'),
+            ),
+            const SizedBox(height: 20), // Add some space between buttons
+            ElevatedButton(
+              onPressed: _toggleRecording, // Start/Stop recording
+              child: Text(isRecording ? 'Stop Recording' : 'Start Recording'),
             ),
           ],
         ),

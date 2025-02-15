@@ -1,0 +1,20 @@
+{
+  "buildFiles": [
+    "/Users/ishikagupta/development/flutter/packages/flutter_tools/gradle/src/main/groovy/CMakeLists.txt"
+  ],
+  "cleanCommandsComponents": [
+    [
+      "/Users/ishikagupta/Library/Android/sdk/cmake/3.22.1/bin/ninja",
+      "-C",
+      "/Users/ishikagupta/Desktop/hack-for-humanity-2025/app/android/app/.cxx/Debug/1n5hi6ng/x86",
+      "clean"
+    ]
+  ],
+  "buildTargetsCommandComponents": [
+    "/Users/ishikagupta/Library/Android/sdk/cmake/3.22.1/bin/ninja",
+    "-C",
+    "/Users/ishikagupta/Desktop/hack-for-humanity-2025/app/android/app/.cxx/Debug/1n5hi6ng/x86",
+    "{LIST_OF_TARGETS_TO_BUILD}"
+  ],
+  "libraries": {}
+}
