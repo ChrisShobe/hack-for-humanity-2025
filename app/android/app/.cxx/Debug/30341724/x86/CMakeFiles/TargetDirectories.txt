@@ -1,0 +1,2 @@
+/Users/shaunak/Documents/Projects/hack-for-humanity-2025/app/android/app/.cxx/Debug/30341724/x86/CMakeFiles/edit_cache.dir
+/Users/shaunak/Documents/Projects/hack-for-humanity-2025/app/android/app/.cxx/Debug/30341724/x86/CMakeFiles/rebuild_cache.dir
