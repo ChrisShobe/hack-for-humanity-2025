@@ -1,8 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:vibration/vibration.dart'; // Import the vibration package
+import 'package:flutter_background/flutter_background.dart';
+import 'package:app/background.dart'; // Import the background task file
 
-void main() {
-  runApp(const MyApp());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  const androidConfig = FlutterBackgroundAndroidConfig(
+    notificationTitle: "Background Task",
+    notificationText: "Listening for sounds...",
+    notificationImportance: AndroidNotificationImportance.normal,
+    enableWifiLock: true,
+  );
+
+  bool hasPermissions =
+      await FlutterBackground.initialize(androidConfig: androidConfig);
+
+  if (hasPermissions) {
+    await FlutterBackground.enableBackgroundExecution();
+  }
+
+  runApp(MyApp());
 }
 
 class MyApp extends StatelessWidget {
@@ -11,12 +29,12 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      debugShowCheckedModeBanner: false,
+      title: 'Background Task Example',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        useMaterial3: true,
+        primarySwatch: Colors.blue,
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      home: BackgroundTaskScreen(),
     );
   }
 }
@@ -118,7 +136,8 @@ class _MyHomePageState extends State<MyHomePage> {
                 ),
               ],
             ),
-            const SizedBox(height: 20), // Add some space between the counter and button
+            const SizedBox(
+                height: 20), // Add some space between the counter and button
             ElevatedButton(
               onPressed: _vibratePhone, // Vibrates the phone on button press
               child: const Text('Vibrate Phone'),
