@@ -1,0 +1,6 @@
+matplotlib
+librosa
+tensorflow
+joblib
+scikit-learn
+pandas 
