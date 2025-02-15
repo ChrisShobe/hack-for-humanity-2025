@@ -1,25 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:vibration/vibration.dart'; // Import the vibration package
-import 'package:flutter_background/flutter_background.dart';
-import 'package:app/background.dart'; // Import the background task file
+import 'package:vibration/vibration.dart';
+import 'API/Client.dart'; // Import the vibration package
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-
-  const androidConfig = FlutterBackgroundAndroidConfig(
-    notificationTitle: "Background Task",
-    notificationText: "Listening for sounds...",
-    notificationImportance: AndroidNotificationImportance.normal,
-    enableWifiLock: true,
-  );
-
-  bool hasPermissions =
-      await FlutterBackground.initialize(androidConfig: androidConfig);
-
-  if (hasPermissions) {
-    await FlutterBackground.enableBackgroundExecution();
-  }
-
+void main() {
+  
   runApp(MyApp());
 }
 
@@ -30,11 +14,11 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Background Task Example',
+      title: 'Vibration Example',
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: BackgroundTaskScreen(),
+      home: MyHomePage(title: 'Vibration App'),
     );
   }
 }
@@ -60,14 +44,12 @@ class _MyHomePageState extends State<MyHomePage> {
       }
     });
   }
-
-  // Function to vibrate the phone
   void _vibratePhone() async {
     if (await Vibration.hasVibrator() ?? false) {
       Vibration.vibrate(duration: 500); // Vibrates for 500 milliseconds
     }
   }
-
+  AudioUploader MyClient = AudioUploader(serverUrl: 'localhost:5000/upload');
   @override
   Widget build(BuildContext context) {
     return Scaffold(
