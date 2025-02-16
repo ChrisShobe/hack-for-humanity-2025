@@ -30,6 +30,18 @@ df = pd.DataFrame(columns=["Label", "Audio Length", "Audio Sample", "Spectrogram
 total_files = len(df_csv)
 files_to_process = int(total_files * (percentage / 100))  # Calculate the number of files to process based on percentage
 
+# Define augmentation function
+def augment_audio(audio, sr, pitch_shift_max=2, time_stretch_max=1.2):
+    # Apply pitch shift with a random number of semitones
+    pitch_shift = np.random.uniform(-pitch_shift_max, pitch_shift_max)
+    audio = librosa.effects.pitch_shift(audio, sr, n_steps=pitch_shift)
+    
+    # Apply time stretching with a random factor
+    stretch_factor = np.random.uniform(1.0, time_stretch_max)  # Speed-up or slow-down
+    audio = librosa.effects.time_stretch(audio, stretch_factor)
+    
+    return audio
+
 # Process audio files using CSV
 with tqdm(total=files_to_process, desc="Processing Audio Files") as pbar:
     for idx, row in df_csv.iterrows():
@@ -47,6 +59,9 @@ with tqdm(total=files_to_process, desc="Processing Audio Files") as pbar:
             if audio_length <= 0:
                 pbar.update(1)
                 continue
+
+            # Apply data augmentation
+            audio = augment_audio(audio, sr)
 
             # Compute STFT and mel spectrogram
             stft_matrix = librosa.stft(audio, n_fft=2048, hop_length=512)
@@ -88,9 +103,6 @@ y = label_encoder.fit_transform(y)
 
 # Split the data first before any processing (avoid data leakage)
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-
-# Data augmentation for the training set (if needed)
-# For now, we won't use data augmentation in this example, but you can add techniques like time-shifting or pitch-shifting later
 
 # Build the CNN model with regularization and dropout
 model = models.Sequential([
