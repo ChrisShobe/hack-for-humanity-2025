@@ -11,6 +11,12 @@ label_encoder = LabelEncoder()
 label_encoder.fit(['air_conditioner', 'car_horn', 'children_playing', 'dog_bark', 'drilling', 'engine_idling', 'gun_shot', 'jackhammer',
 'siren', 'street_music'])
 
+def augment_audio(audio, sr):
+    # Apply pitch shift augmentation
+    pitch_shift = np.random.uniform(-4, 4)  # Random pitch shift between -4 and 4 semitones
+    audio = librosa.effects.pitch_shift(y=audio, sr=sr, n_steps=pitch_shift)  # Explicitly named arguments
+    return audio
+
 def pad_or_truncate_spectrogram(spectrogram, target_length=600):
     if spectrogram.shape[1] < target_length:
         padding = target_length - spectrogram.shape[1]
@@ -26,6 +32,9 @@ def run_inference(file_path):
     if audio_length <= 0:
         print("Invalid audio file.")
         return
+
+    # Apply augmentation
+    audio = augment_audio(audio, sr)
 
     # Compute STFT and mel spectrogram
     stft_matrix = librosa.stft(audio, n_fft=2048, hop_length=512)
@@ -52,7 +61,6 @@ def run_inference(file_path):
 
     print(f"Predicted label: {predicted_label[0]}")
     print(f"Confidence: {confidence:.4f}")
-
 
 
 # Example usage
