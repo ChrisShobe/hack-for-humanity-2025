@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify
+from Inference import run_inference
 import os
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import unpad
@@ -43,18 +44,12 @@ def upload_file():
         print("No selected file.")  # Debugging statement
         return jsonify({"error": "No selected file"}), 400
     if file and allowed_file(file.filename):
-        print(f"File {file.filename} is valid. Proceeding with upload.")  # Debugging statement
-        #runInference(filepath)
-        filepath = os.path.join(UPLOAD_FOLDER, file.filename)
-        
-        # Save the file to the specified location
+        filepath = os.path.join(UPLOAD_FOLDER, file.filename)  # Move this line up here
         file.save(filepath)
-        print(f"File saved at {filepath}")  # Debugging statement
         
-        # Decrypt the file
-        #decrypt_file(filepath, filepath.replace(".enc", "_decrypted.wav"), AES_KEY, AES_IV)
+        response = run_inference(filepath)  # Call run_inference after saving the file
         
-        return jsonify({"message": "File successfully uploaded and decrypted", "file_path": filepath}), 200
+        return jsonify({"message": response, "file_path": filepath}), 200
     
     print("Invalid file type received.")  # Debugging statement
     return jsonify({"error": "Invalid file type"}), 400

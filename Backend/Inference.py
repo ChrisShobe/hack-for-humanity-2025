@@ -69,6 +69,7 @@ def run_inference(file_path):
     print(f"Predicted label: {predicted_label[0]}")
     print(f"Confidence: {confidence:.4f}")
     print("Prediction vector:", prediction)
+    return predicted_label[0]
 
 
 # Example usage (provide the path to your test audio file)

@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
-import 'package:mime_type/mime_type.dart';  // Updated import for MIME type detection
+import 'package:mime_type/mime_type.dart'; 
 
 class AudioUploader {
   final String serverUrl;
@@ -18,28 +18,20 @@ class AudioUploader {
       print('Error connecting to server: $e');
     }
   }
-  Future<void> uploadAudioFile(String filePath) async {
+
+
+  Future<String> uploadAudioFile(String filePath) async {
     try {
       File file = File(filePath);
       if (!file.existsSync()) {
         print("File not found at $filePath");
-        return;
+        return "No file found";
       }
-
-      String? mimeType;
-      mimeType = 'audio/wav';  // Set mime type to audio/wav
-
-      // String? mimeType = mime(filePath);
-      // if (mimeType == null || !mimeType.startsWith("audio")) {
-      //   print("The file is not a valid audio file. The type is: $mimeType");
-      //   return;
-      // }
-
-      // // Explicitly set the mimeType to audio/wav (or any desired audio type)
-      // if (mimeType != 'audio/wav') {
-      //   mimeType = 'audio/wav';  // Set mime type to audio/wav
-      // }
-
+      String? mimeType = mime(filePath);
+      if (mimeType == null || !mimeType.startsWith("audio")) {
+        print("The file is not a valid audio file");
+        return "invalid audio file";
+      }
       final String serverUrlWithScheme = "http://$serverUrl/upload";  // Add "http://" if not present
       var request = http.MultipartRequest(
         'POST', Uri.parse(serverUrlWithScheme)  // Append the /upload path
@@ -54,13 +46,24 @@ class AudioUploader {
       // Add file to the request
       request.files.add(fileStream);
       var response = await request.send();
+
+      // Read the response body
       if (response.statusCode == 200) {
+        String responseBody = await response.stream.bytesToString();
         print("File uploaded successfully!");
-      } else {
+        print("Server response: $responseBody");
+        return responseBody;
+      } 
+      else {
         print("Failed to upload file. Status code: ${response.statusCode}");
+        String responseBody = await response.stream.bytesToString();
+        print("Server response: $responseBody");
+        return "Failed to Upload";
       }
     } catch (e) {
       print("Error while uploading file: $e");
+      return "error";
     }
   }
+
 }
