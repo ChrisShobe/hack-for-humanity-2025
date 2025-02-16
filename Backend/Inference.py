@@ -3,13 +3,17 @@ import librosa
 import numpy as np
 from tensorflow.keras.models import load_model
 from sklearn.preprocessing import LabelEncoder
+import pickle
+
+
 
 # Load the model (Keras .h5 model)
 model = load_model('models/urban_sound_cnn_model.keras')
 
-label_encoder = LabelEncoder()
-label_encoder.fit(['air_conditioner', 'car_horn', 'children_playing', 'dog_bark', 'drilling', 'engine_idling', 'gun_shot', 'jackhammer',
-'siren', 'street_music'])
+# Load the saved LabelEncoder
+with open('models/label_encoder.pkl', 'rb') as f:
+    label_encoder = pickle.load(f)
+
 
 def augment_audio(audio, sr):
     # Apply pitch shift augmentation
@@ -61,6 +65,9 @@ def run_inference(file_path):
 
     print(f"Predicted label: {predicted_label[0]}")
     print(f"Confidence: {confidence:.4f}")
+
+    print("Prediction vector:", prediction)
+
 
 
 # Example usage

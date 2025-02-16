@@ -9,72 +9,79 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
 import tensorflow as tf
 from tensorflow.keras import layers, models, regularizers
+from sklearn.metrics import confusion_matrix
+import seaborn as sns
 import warnings
-import joblib
+import pickle
 
 warnings.filterwarnings('ignore')
 
 csv_path = "/Users/shaunak/.cache/kagglehub/datasets/rupakroy/urban-sound-8k/versions/1/UrbanSound8K.csv"
 audio_path = "/Users/shaunak/.cache/kagglehub/datasets/rupakroy/urban-sound-8k/versions/1/UrbanSound8K/UrbanSound8K/audio"
 
-# Percentage of files to process and train on
-percentage = 10 # Set this value to control the percentage (e.g., 50 means using 50% of the files)
+percentage = 100
 
-# Load CSV 
 df_csv = pd.read_csv(csv_path)
-
-# Initialize DataFrame
 df = pd.DataFrame(columns=["Label", "Audio Length", "Audio Sample", "Spectrogram"])
 
-# Count total audio files for progress bar
-total_files = len(df_csv)
-files_to_process = int(total_files * (percentage / 100))  # Calculate the number of files to process based on percentage
+# Set thresholds and pitch shifts
+low_classes = ['car_horn', 'gun_shot']
+high_classes = ['engine_idling', 'jackhammer', 'dog_bark']
+max_samples = 250
+pitch_shifts = [-4, -2, 2, 4]
+class_counter = {label: 0 for label in df_csv['class'].unique()}
 
-# Define augmentation function
-def augment_audio(audio, sr):
-    # Apply pitch shift augmentation
-    pitch_shift = np.random.uniform(-4, 4)  # Random pitch shift between -4 and 4 semitones
-    audio = librosa.effects.pitch_shift(y=audio, sr=sr, n_steps=pitch_shift)  # Explicitly named arguments
-    return audio
+# Augmentation function
+def augment_audio(audio, sr, shifts):
+    augmented_audios = []
+    for shift in shifts:
+        augmented_audios.append(librosa.effects.pitch_shift(y=audio, sr=sr, n_steps=shift))
+    return augmented_audios
 
-# Process audio files using CSV
-with tqdm(total=files_to_process, desc="Processing Audio Files") as pbar:
+# Processing loop with augmentation applied to 50% of each class
+with tqdm(total=int(len(df_csv) * (percentage / 100)), desc="Processing Audio Files") as pbar:
     for idx, row in df_csv.iterrows():
-        if idx >= files_to_process:  # Stop after processing the desired percentage
+        if idx >= int(len(df_csv) * (percentage / 100)):
             break
+
         file_name = row['slice_file_name']
         fold = row['fold']
         label = row['class']
-        
-        # Construct file path
         file_path = os.path.join(audio_path, f"fold{fold}", file_name)
-        if os.path.exists(file_path):  # Ensure the file exists
-            audio, sr = librosa.load(file_path, sr=None)  # Load audio
-            audio_length = len(audio)  # Length of audio array
+
+        if os.path.exists(file_path) and class_counter[label] < max_samples:
+            audio, sr = librosa.load(file_path, sr=None)
+            audio_length = len(audio)
             if audio_length <= 0:
                 pbar.update(1)
                 continue
 
-            # Apply data augmentation
-            audio = augment_audio(audio, sr)
-
-            # Compute STFT and mel spectrogram
+            # Normal processing (original sample)
             stft_matrix = librosa.stft(audio, n_fft=2048, hop_length=512)
             S = librosa.feature.melspectrogram(S=np.abs(stft_matrix) ** 2, sr=sr, n_mels=24, fmax=40000)
             S_dB = librosa.power_to_db(S, ref=np.mean)
 
-            # Append data to DataFrame
-            df = df._append(
-                {
-                    "Label": label,
-                    "Audio Length": audio_length,
-                    "Audio Sample": audio,
-                    "Spectrogram": S_dB
-                },
-                ignore_index=True,
-            )
+            # Append the original sample
+            df = df._append({"Label": label, "Audio Length": audio_length, "Audio Sample": audio, "Spectrogram": S_dB}, ignore_index=True)
+            class_counter[label] += 1
+
+            # Apply augmentation to 50% of the samples
+            if np.random.rand() < 0.5 and class_counter[label] < max_samples:
+                augmented_audios = augment_audio(audio, sr, pitch_shifts)
+                for augmented in augmented_audios:
+                    stft_matrix = librosa.stft(augmented, n_fft=2048, hop_length=512)
+                    S = librosa.feature.melspectrogram(S=np.abs(stft_matrix) ** 2, sr=sr, n_mels=24, fmax=40000)
+                    S_dB = librosa.power_to_db(S, ref=np.mean)
+                    # Append the augmented sample
+                    df = df._append({"Label": label, "Audio Length": audio_length, "Audio Sample": augmented, "Spectrogram": S_dB}, ignore_index=True)
+                    class_counter[label] += 1
+
+        # If the class reaches the max_samples, stop adding more samples for it
+        if class_counter[label] >= max_samples:
+            print(f"Reached max samples for class {label}, stopping further additions.")
         
         pbar.update(1)
+
 
 # Preprocess the data for neural network input
 def pad_or_truncate_spectrogram(spectrogram, target_length=600):
@@ -95,9 +102,15 @@ X = np.expand_dims(X, axis=-1)
 
 label_encoder = LabelEncoder()
 y = label_encoder.fit_transform(y)
+with open('models/label_encoder.pkl', 'wb') as f:
+    pickle.dump(label_encoder, f)
+
+print("Class label counts:")
+print(df["Label"].value_counts())
 
 # Split the data first before any processing (avoid data leakage)
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
 
 # Build the CNN model with regularization and dropout
 model = models.Sequential([
@@ -136,8 +149,34 @@ print(label_encoder.inverse_transform(np.unique(y_train)))  # Print the decoded 
 test_loss, test_acc = model.evaluate(X_test, y_test)
 print(f"Test Accuracy: {test_acc * 100:.2f}%")
 
+# Make predictions on the test set
+y_pred = model.predict(X_test)
+y_pred_classes = np.argmax(y_pred, axis=1)  # Get the class labels with the highest probability
+
+cm = confusion_matrix(y_test, y_pred_classes)
+
+# Plot the confusion matrix
+sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", xticklabels=label_encoder.classes_, yticklabels=label_encoder.classes_)
+plt.title('Confusion Matrix')
+plt.ylabel('True Labels')
+plt.xlabel('Predicted Labels')
+plt.show()
+
+# Identify misclassified samples
+misclassified_indices = np.where(y_pred_classes != y_test)[0]
+
+# Print misclassified samples
+misclassified_samples = df.iloc[misclassified_indices]
+misclassified_true_labels = label_encoder.inverse_transform(y_test[misclassified_indices])
+misclassified_pred_labels = label_encoder.inverse_transform(y_pred_classes[misclassified_indices])
+
+print("\nMisclassified samples:")
+for idx, (true_label, pred_label) in enumerate(zip(misclassified_true_labels, misclassified_pred_labels)):
+    print(f"Sample {misclassified_samples.iloc[idx]['Audio Sample']} - True label: {true_label}, Predicted label: {pred_label}")
+
+
 # Save the model
-model.save('urban_sound_cnn_model.keras')
+model.save('models/urban_sound_cnn_model.keras')
 print("Model saved in normal TensorFlow format.")
 
 # Convert the model to TFLite format

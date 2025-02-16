@@ -52,7 +52,7 @@ class _MyHomePageState extends State<MyHomePage> {
     while(true) {
       await _audioRecorder.startRecording();
       setState(() {isRecording = true;});
-      await Future.delayed(const Duration(seconds: 3));
+      await Future.delayed(const Duration(seconds: 6));
       final path = await _audioRecorder.stopRecording();
       if(path == null) {print("there was an error and it didnt return a file path"); return;}
       MyClient.uploadAudioFile(path);
