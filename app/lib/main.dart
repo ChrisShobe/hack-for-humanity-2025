@@ -39,13 +39,14 @@ class _MyHomePageState extends State<MyHomePage> {
 
   final AudioRecorderService _audioRecorder = AudioRecorderService(); // Initialize audio recorder
   bool isRecording = false;
-
+  AudioUploader MyClient = AudioUploader(serverUrl: '10.0.2.2:5000');
   @override
   void initState() {
     super.initState();
     _startRecordingOnLaunch();  // Start recording when the app launches
+    MyClient.connectToServer();  // Connect to the server on startup
   }
-
+  
   // Automatically start recording when the app starts
   Future<void> _startRecordingOnLaunch() async {
     while(true) {
@@ -61,12 +62,6 @@ class _MyHomePageState extends State<MyHomePage> {
 
       setState(() => isRecording = false);
     }
-    
-  AudioUploader MyClient = AudioUploader(serverUrl: '10.0.2.2:5000');
-  @override
-  void initState() {
-    super.initState();
-    MyClient.connectToServer();  // Connect to the server on startup
   }
 
   void _toggleSelection(List<bool> list, int index) {
