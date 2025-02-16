@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify
+from Inference import run_inference
 import os
 
 app = Flask(__name__)
@@ -27,10 +28,12 @@ def upload_file():
     if file.filename == '':
         return jsonify({"error": "No selected file"}), 400
     if file and allowed_file(file.filename):
-        #runInference(filepath)
-        filepath = os.path.join(UPLOAD_FOLDER, file.filename)
+        filepath = os.path.join(UPLOAD_FOLDER, file.filename)  # Move this line up here
         file.save(filepath)
-        return jsonify({"message": "File successfully uploaded", "file_path": filepath}), 200
+        
+        response = run_inference(filepath)  # Call run_inference after saving the file
+        
+        return jsonify({"message": response, "file_path": filepath}), 200
     
     return jsonify({"error": "Invalid file type"}), 400
 

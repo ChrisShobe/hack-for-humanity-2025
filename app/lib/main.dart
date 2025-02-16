@@ -63,6 +63,7 @@ class _MyHomePageState extends State<MyHomePage> {
       await Future.delayed(const Duration(seconds: 6));
       final path = await _audioRecorder.stopRecording();
       if(path == null) {print("there was an error and it didnt return a file path"); return;}
+      //add logic here 
       MyClient.uploadAudioFile(path);
       print('Recording saved at: $path');
       setState(() => isRecording = false);
