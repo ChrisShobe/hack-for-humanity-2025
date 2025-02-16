@@ -6,6 +6,18 @@ import 'package:mime_type/mime_type.dart';  // Updated import for MIME type dete
 class AudioUploader {
   final String serverUrl;
   AudioUploader({required this.serverUrl});
+  Future<void> connectToServer() async {
+    try {
+      final response = await http.get(Uri.parse('http://$serverUrl'));
+      if (response.statusCode == 200) {
+        print('Connected to server successfully!');
+      } else {
+        print('Failed to connect. Status code: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error connecting to server: $e');
+    }
+  }
   Future<void> uploadAudioFile(String filePath) async {
     try {
       File file = File(filePath);
@@ -18,8 +30,9 @@ class AudioUploader {
         print("The file is not a valid audio file");
         return;
       }
+      final String serverUrlWithScheme = "http://$serverUrl/upload";  // Add "http://" if not present
       var request = http.MultipartRequest(
-        'POST', Uri.parse(serverUrl)
+        'POST', Uri.parse(serverUrlWithScheme)  // Append the /upload path
       );
       var fileStream = http.MultipartFile.fromBytes(
         'file',

@@ -40,6 +40,13 @@ class _MyHomePageState extends State<MyHomePage> {
   final AudioRecorderService _audioRecorder = AudioRecorderService(); // Initialize audio recorder
   bool isRecording = false;
 
+  AudioUploader MyClient = AudioUploader(serverUrl: '10.0.2.2:5000');
+  @override
+  void initState() {
+    super.initState();
+    MyClient.connectToServer();  // Connect to the server on startup
+  }
+
   void _toggleSelection(List<bool> list, int index) {
     setState(() {
       for (int i = 0; i < list.length; i++) {
@@ -53,19 +60,21 @@ class _MyHomePageState extends State<MyHomePage> {
       Vibration.vibrate(duration: 500); // Vibrates for 500 milliseconds
     }
   }
-
-  AudioUploader MyClient = AudioUploader(serverUrl: 'localhost:5000/upload');
-
+  
   // Start/Stop recording function
   Future<void> _toggleRecording() async {
     if (isRecording) {
       final path = await _audioRecorder.stopRecording();
+      if(path == null) {print("there was an error and it didnt return a file path"); return;}
+      MyClient.uploadAudioFile(path);
       print('Recording saved at: $path');
     } else {
       await _audioRecorder.startRecording();
     }
     setState(() => isRecording = !isRecording);  // Toggle recording state
   }
+
+
 
   @override
   Widget build(BuildContext context) {
