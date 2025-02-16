@@ -40,6 +40,30 @@ class _MyHomePageState extends State<MyHomePage> {
   final AudioRecorderService _audioRecorder = AudioRecorderService(); // Initialize audio recorder
   bool isRecording = false;
 
+  @override
+  void initState() {
+    super.initState();
+    _startRecordingOnLaunch();  // Start recording when the app launches
+  }
+
+  // Automatically start recording when the app starts
+  Future<void> _startRecordingOnLaunch() async {
+    while(true) {
+      await _audioRecorder.startRecording();
+      setState(() {isRecording = true;  // Update UI to reflect that recording has started
+      });
+      // Wait for 3 seconds
+      await Future.delayed(const Duration(seconds: 3));
+
+      // Stop recording and save the file
+      final path = await _audioRecorder.stopRecording();
+      print('Recording saved at: $path');
+
+      setState(() => isRecording = false);
+    }
+    
+  }
+
   void _toggleSelection(List<bool> list, int index) {
     setState(() {
       for (int i = 0; i < list.length; i++) {
