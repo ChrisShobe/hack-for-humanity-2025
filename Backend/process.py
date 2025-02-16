@@ -27,9 +27,11 @@ df = pd.DataFrame(columns=["Label", "Audio Length", "Audio Sample", "Spectrogram
 # Set thresholds and pitch shifts
 low_classes = ['car_horn', 'gun_shot']
 high_classes = ['engine_idling', 'jackhammer', 'dog_bark']
-max_samples = 250
+max_samples = 300
 pitch_shifts = [-4, -2, 2, 4]
-class_counter = {label: 0 for label in df_csv['class'].unique()}
+
+# Initialize class_counter to count "Siren" and "Not siren"
+class_counter = {'Siren': 0, 'Not siren': 0}
 
 # Augmentation function
 def augment_audio(audio, sr, shifts):
@@ -38,7 +40,10 @@ def augment_audio(audio, sr, shifts):
         augmented_audios.append(librosa.effects.pitch_shift(y=audio, sr=sr, n_steps=shift))
     return augmented_audios
 
-# Processing loop with augmentation applied to 50% of each class
+# Define your mapping for "Siren" and "Not siren"
+siren_classes = ['siren', 'car_horn']  # Replace with actual siren class names
+not_siren_classes = ['air_conditioner', 'children_playing', 'dog_bark', 'drilling', 'engine_idling', 'gun_shot', 'jackhammer', 'siren', 'street_music']  # Replace with actual not-siren class names
+
 with tqdm(total=int(len(df_csv) * (percentage / 100)), desc="Processing Audio Files") as pbar:
     for idx, row in df_csv.iterrows():
         if idx >= int(len(df_csv) * (percentage / 100)):
@@ -49,7 +54,13 @@ with tqdm(total=int(len(df_csv) * (percentage / 100)), desc="Processing Audio Fi
         label = row['class']
         file_path = os.path.join(audio_path, f"fold{fold}", file_name)
 
-        if os.path.exists(file_path) and class_counter[label] < max_samples:
+        # Map label to "Siren" or "Not siren"
+        if label in siren_classes:
+            new_label = 'Siren'
+        else:
+            new_label = 'Not siren'
+
+        if os.path.exists(file_path) and class_counter[new_label] < max_samples:
             audio, sr = librosa.load(file_path, sr=None)
             audio_length = len(audio)
             if audio_length <= 0:
@@ -61,27 +72,26 @@ with tqdm(total=int(len(df_csv) * (percentage / 100)), desc="Processing Audio Fi
             S = librosa.feature.melspectrogram(S=np.abs(stft_matrix) ** 2, sr=sr, n_mels=24, fmax=40000)
             S_dB = librosa.power_to_db(S, ref=np.mean)
 
-            # Append the original sample
-            df = df._append({"Label": label, "Audio Length": audio_length, "Audio Sample": audio, "Spectrogram": S_dB}, ignore_index=True)
-            class_counter[label] += 1
+            # Append the original sample with the new label
+            df = df._append({"Label": new_label, "Audio Length": audio_length, "Audio Sample": audio, "Spectrogram": S_dB}, ignore_index=True)
+            class_counter[new_label] += 1
 
             # Apply augmentation to 50% of the samples
-            if np.random.rand() < 0.5 and class_counter[label] < max_samples:
+            if np.random.rand() < 0.5 and class_counter[new_label] < max_samples:
                 augmented_audios = augment_audio(audio, sr, pitch_shifts)
                 for augmented in augmented_audios:
                     stft_matrix = librosa.stft(augmented, n_fft=2048, hop_length=512)
                     S = librosa.feature.melspectrogram(S=np.abs(stft_matrix) ** 2, sr=sr, n_mels=24, fmax=40000)
                     S_dB = librosa.power_to_db(S, ref=np.mean)
-                    # Append the augmented sample
-                    df = df._append({"Label": label, "Audio Length": audio_length, "Audio Sample": augmented, "Spectrogram": S_dB}, ignore_index=True)
-                    class_counter[label] += 1
+                    # Append the augmented sample with the new label
+                    df = df._append({"Label": new_label, "Audio Length": audio_length, "Audio Sample": augmented, "Spectrogram": S_dB}, ignore_index=True)
+                    class_counter[new_label] += 1
 
         # If the class reaches the max_samples, stop adding more samples for it
-        if class_counter[label] >= max_samples:
-            print(f"Reached max samples for class {label}, stopping further additions.")
+        if class_counter[new_label] >= max_samples:
+            print(f"Reached max samples for class {new_label}, stopping further additions.")
         
         pbar.update(1)
-
 
 # Preprocess the data for neural network input
 def pad_or_truncate_spectrogram(spectrogram, target_length=600):
@@ -110,7 +120,6 @@ print(df["Label"].value_counts())
 
 # Split the data first before any processing (avoid data leakage)
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-
 
 # Build the CNN model with regularization and dropout
 model = models.Sequential([
@@ -180,10 +189,4 @@ model.save('models/urban_sound_cnn_model.keras')
 print("Model saved in normal TensorFlow format.")
 
 # Convert the model to TFLite format
-# converter = tf.lite.TFLiteConverter.from_keras_model(model)
-# tflite_model = converter.convert()
-
-# # Save the TFLite model
-# with open('urban_sound_cnn_model.tflite', 'wb') as f:
-#     f.write(tflite_model)
-# print("Model saved in TFLite format.")
+# converter = tf.lite.TFLite

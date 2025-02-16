@@ -5,8 +5,6 @@ from tensorflow.keras.models import load_model
 from sklearn.preprocessing import LabelEncoder
 import pickle
 
-
-
 # Load the model (Keras .h5 model)
 model = load_model('models/urban_sound_cnn_model.keras')
 
@@ -14,13 +12,13 @@ model = load_model('models/urban_sound_cnn_model.keras')
 with open('models/label_encoder.pkl', 'rb') as f:
     label_encoder = pickle.load(f)
 
-
+# Augment audio with pitch shifting
 def augment_audio(audio, sr):
-    # Apply pitch shift augmentation
     pitch_shift = np.random.uniform(-4, 4)  # Random pitch shift between -4 and 4 semitones
-    audio = librosa.effects.pitch_shift(y=audio, sr=sr, n_steps=pitch_shift)  # Explicitly named arguments
+    audio = librosa.effects.pitch_shift(y=audio, sr=sr, n_steps=pitch_shift)
     return audio
 
+# Padding or truncating the spectrogram
 def pad_or_truncate_spectrogram(spectrogram, target_length=600):
     if spectrogram.shape[1] < target_length:
         padding = target_length - spectrogram.shape[1]
@@ -29,6 +27,7 @@ def pad_or_truncate_spectrogram(spectrogram, target_length=600):
         spectrogram = spectrogram[:, :target_length]
     return spectrogram
 
+# Run inference on a given audio file
 def run_inference(file_path):
     audio, sr = librosa.load(file_path, sr=None)
     audio_length = len(audio)
@@ -37,24 +36,28 @@ def run_inference(file_path):
         print("Invalid audio file.")
         return
 
-    # Apply augmentation
+    # Apply audio augmentation (like pitch shift)
     audio = augment_audio(audio, sr)
 
-    # Compute STFT and mel spectrogram
+    # Compute the STFT (Short-time Fourier transform)
     stft_matrix = librosa.stft(audio, n_fft=2048, hop_length=512)
+    
+    # Compute Mel Spectrogram
     S = librosa.feature.melspectrogram(S=np.abs(stft_matrix) ** 2, sr=sr, n_mels=24, fmax=40000)
+    
+    # Convert to decibels (log scale)
     S_dB = librosa.power_to_db(S, ref=np.mean)
 
-    # Pad or truncate the spectrogram to match the model's expected input size
+    # Pad or truncate the spectrogram
     S_dB = pad_or_truncate_spectrogram(S_dB)
 
-    # Reshape the spectrogram to add the channel dimension (shape: (24, 600, 1))
-    S_dB = np.expand_dims(S_dB, axis=-1)  # Adding the channel dimension
-
-    # Normalize the spectrogram
+    # Normalize the spectrogram (same as during training)
     S_dB = S_dB / np.max(S_dB)
 
-    # Add batch dimension (shape: (1, 24, 600, 1))
+    # Add channel dimension (for CNN input)
+    S_dB = np.expand_dims(S_dB, axis=-1)
+
+    # Expand batch dimension for prediction
     S_dB = np.expand_dims(S_dB, axis=0)
 
     # Predict with the model
@@ -65,11 +68,9 @@ def run_inference(file_path):
 
     print(f"Predicted label: {predicted_label[0]}")
     print(f"Confidence: {confidence:.4f}")
-
     print("Prediction vector:", prediction)
 
 
-
-# Example usage
+# Example usage (provide the path to your test audio file)
 file_path = 'uploads/recording.wav'
 run_inference(file_path)
