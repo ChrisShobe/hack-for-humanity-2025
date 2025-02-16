@@ -4,6 +4,7 @@ from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.primitives import padding
 from cryptography.hazmat.backends import default_backend
 import os
+from flask_cors import CORS
 
 # Define your key and IV (must match Dart values)
 AES_KEY = b'your32characterlongencryptionkey'   # 32 bytes (AES-256)
@@ -15,6 +16,7 @@ encrypted_file = "recording.wav.enc"
 decrypted_file = "recording_decrypted.wav"
 
 app = Flask(__name__)
+CORS(app)
 
 # Specify the folder to save uploaded files
 UPLOAD_FOLDER = 'uploads'
@@ -99,4 +101,4 @@ def decrypt_file(encrypted_file_path):
 
 if __name__ == '__main__':
     print("Starting Flask server...")  # Debugging statement
-    app.run(debug=True)
+    app.run(host='0.0.0.0', port=5050, debug=True)

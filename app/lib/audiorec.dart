@@ -14,7 +14,6 @@ class AudioRecorderService {
     try {
       // Get the external storage directory (use getExternalStorageDirectory for Android)
       final directory = await getExternalStorageDirectory();
-
       if (directory != null) {
         // Construct the path where you want to save the audio file
         final path = '${directory.path}/recording.wav'; 
@@ -40,16 +39,32 @@ class AudioRecorderService {
     }
   }
 
-  // Stop the recording
+
   Future<String?> stopRecording() async {
     try {
       if (_isRecording) {
         _isRecording = false;
-        final path = await _recorder.stop();  // Stop and get the path where the file is saved
-        print("Recording saved at: $path");
+        
+        // Stop and get the path where the file is saved
+        final path = await _recorder.stop();
+        print("FILE IS SAVED TO $path");
         if (path != null) {
-          print("Recording saved at: $path");
-          return await path; // Encrypt the file before returning
+          // Get the app's external storage directory (specific to your app)
+          final directory = "/storage/emulated/0/Download";
+
+          // Define the new file path where you'd like to save the recording (in your app's directory)
+          final newPath = '${directory}/recording.wav';
+
+          // Move the file to the new path
+          final file = File(path);
+          final newFile = await file.copy(newPath);
+          print("File copied to $newPath");
+
+          // Delete the original file
+          await file.delete();
+          print("Original file deleted from $path");
+
+          return newFile.path;
         }
       }
       return null;
@@ -58,6 +73,7 @@ class AudioRecorderService {
       return null;
     }
   }
+
 
   // Encrypt the recorded file
   Future<String> encryptFile(String filePath) async {

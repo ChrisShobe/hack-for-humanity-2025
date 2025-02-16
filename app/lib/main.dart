@@ -8,13 +8,16 @@ import 'API/Client.dart'; // Import the vibration package
 import 'audiorec.dart';  // Import the audio recorder service
 import 'package:encrypt/encrypt.dart' as encrypt; // For encryption
 import 'package:mime/mime.dart';  // Import the mime package
+import 'package:permission_handler/permission_handler.dart';
+import 'dart:convert';
+
+// Request permission
 
 bool buttonsEnabled = true;
 bool isFlashlightOn = false;
 bool isVibrating = false;
 void main() {
   runApp(const MyApp());
-
 }
 
 class MyApp extends StatelessWidget {
@@ -45,6 +48,11 @@ class MyHomePage extends StatefulWidget {
   State<MyHomePage> createState() => _MyHomePageState();
 }
 
+  void showSirenMessage(BuildContext context) {
+    final snackBar = SnackBar(content: Text("Turning on flash and vibration"));
+    ScaffoldMessenger.of(context).showSnackBar(snackBar);
+  }
+
 class _MyHomePageState extends State<MyHomePage> {
   List<bool> isSelected1 = [true, false];
   List<bool> isSelected2 = [false, true];
@@ -52,48 +60,90 @@ class _MyHomePageState extends State<MyHomePage> {
 
   final AudioRecorderService _audioRecorder = AudioRecorderService(); // Initialize audio recorder
   bool isRecording = false;
-  AudioUploader MyClient = AudioUploader(serverUrl: '10.0.2.2:5000');
+  AudioUploader MyClient = AudioUploader(serverUrl: '192.168.50.19:5050');
   
   @override
   void initState() {
+    print("INITSTATCALLED");
     super.initState();
+    _requestPermissions(); 
     _startRecordingOnLaunch();  // Start recording when the app launches
+    print("CONNECTING TO SERVER ");
     MyClient.connectToServer();  // Connect to the server on startup
   }
 
-  // Automatically start recording when the app starts
-  Future<void> _startRecordingOnLaunch() async {
-    while (true) {
-      await _audioRecorder.startRecording();
-      setState(() {isRecording = true;});
-      await Future.delayed(const Duration(seconds: 6));
-      final path = await _audioRecorder.stopRecording();
-      if(path == null) {print("there was an error and it didnt return a file path"); return;}
-      //add logic here 
-      print('Recording saved at: $path');
-      setState(() => isRecording = false);
-      final encryptedFilePath = await _audioRecorder.encryptFile(path);
-      String result = await MyClient.uploadAudioFile(encryptedFilePath);
-      print('Result of AI is: $result');
-      if(result == "siren") {
-        print("Turning on flash and vibration");
-        if(!isFlashlightOn) {
-          _toggleFlashlight();
-        }
-        if(!isVibrating) {
-          _vibratePhone();
-        }
-      } else {
-        print("No siren detected!");
-        if(isFlashlightOn) {
-          _toggleFlashlight();
-        }
-        if(isVibrating) {
-          _stopVibration();
+
+  Future<void> _requestPermissions() async {
+    bool _permissionsGranted = false;
+    if (_permissionsGranted) return;
+
+    if (Platform.isAndroid) {
+      var status = await Permission.manageExternalStorage.status;
+      if (!status.isGranted) {
+        status = await Permission.manageExternalStorage.request();
+        if (!status.isGranted) {
+          throw Exception("Manage External Storage permission not granted");
         }
       }
+    } 
+    _permissionsGranted = true; // Update the permissions state
+  }
+  bool isRecordingInProgress = false;
+  void showSirenMessage(BuildContext context) {
+    final snackBar = SnackBar(
+      content: Text("Turning on flash and vibration"),
+      duration: Duration(seconds: 3), // Set the duration to 3 seconds
+    );
+    ScaffoldMessenger.of(context).showSnackBar(snackBar);
+  }
+  Future<void> _startRecordingOnLaunch() async {
+    await Permission.microphone.request();
+    while (true) {
+      if (!isRecordingInProgress) {
+        isRecordingInProgress = true;
+        await _audioRecorder.startRecording();
+        print("LOOPING");
+        setState(() { isRecording = true; });
+        await Future.delayed(const Duration(seconds: 3));
+
+        final path = await _audioRecorder.stopRecording();
+        if (path == null) {
+          print("There was an error and it didn't return a file path");
+          isRecordingInProgress = false;  // Reset flag after failure
+          return;
+        }
+        setState(() => isRecording = false);
+        final encryptedFilePath = await _audioRecorder.encryptFile(path);
+        print("IT GETS TILL HERE");
+        String result = await MyClient.uploadAudioFile(encryptedFilePath);
+        print('Result of AI is: $result');
+        Map<String, dynamic> resultMap = jsonDecode(result);
+        String message = resultMap['message'];
+        if (message == "Siren") {
+          print("Turning on flash and vibration");
+          showSirenMessage(context);
+          if (!isFlashlightOn) {
+            _blinkFlashlight();
+          }
+          if (!isVibrating) {
+            _vibratePhone();
+          }
+        } else {
+          print("No siren detected!");
+          if (isFlashlightOn) {
+            _toggleFlashlight();
+          }
+          if (isVibrating) {
+            _stopVibration();
+          }
+        }
+
+        isRecordingInProgress = false; // Reset flag after recording ends
+      }
+      await Future.delayed(const Duration(seconds: 1)); // Optional delay to prevent excessive checks
     }
   }
+
 
   void toggleSelection(List<bool> list, int index) {
     setState(() {
@@ -137,7 +187,22 @@ class _MyHomePageState extends State<MyHomePage> {
       print('Error toggling flashlight: $e');
     }
   }
-  
+  Future<void> _blinkFlashlight() async {
+  try {
+    int blinkDuration = 50; // Duration in milliseconds for each blink
+    int totalDuration = 3000; // Total duration of blinking in milliseconds
+    int endTime = DateTime.now().millisecondsSinceEpoch + totalDuration;
+
+    while (DateTime.now().millisecondsSinceEpoch < endTime) {
+      await TorchLight.enableTorch();
+      await Future.delayed(Duration(milliseconds: blinkDuration));
+      await TorchLight.disableTorch();
+      await Future.delayed(Duration(milliseconds: blinkDuration));
+    }
+  } catch (e) {
+    print('Error blinking flashlight: $e');
+  }
+}
   // Start/Stop recording function
   Future<void> toggleRecording() async {
     if (isRecording) {
@@ -267,7 +332,6 @@ class _MyHomePageState extends State<MyHomePage> {
                 onPressed: (index) {
                   setState(() {
                       isSelected2 = [index == 0, index == 1]; // Toggle state
-
                       // Call vibration function directly when "On" is selected
                       if (index == 0 && !isFlashlightOn) {
                         _toggleFlashlight(); // Turn on flashlight
@@ -354,15 +418,13 @@ class _MyHomePageState extends State<MyHomePage> {
                 onPressed: (index) {
                   setState(() {
                       isSelected3 = [index == 0, index == 1]; // Toggle state
-
-                      // Call vibration function directly when "On" is selected
                       if (index == 0) {
                         _vibratePhone();
                       }
                       else{
                         _stopVibration();
                       }
-            });
+                     });
                   },
                 borderRadius: BorderRadius.circular(10),
                 selectedColor: Colors.white, // Text color when selected
