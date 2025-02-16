@@ -74,6 +74,24 @@ class _MyHomePageState extends State<MyHomePage> {
       setState(() => isRecording = false);
       final encryptedFilePath = await _audioRecorder.encryptFile(path);
       String result = await MyClient.uploadAudioFile(encryptedFilePath);
+      print('Result of AI is: $result');
+      if(result == "siren") {
+        print("Turning on flash and vibration");
+        if(!isFlashlightOn) {
+          _toggleFlashlight();
+        }
+        if(!isVibrating) {
+          _vibratePhone();
+        }
+      } else {
+        print("No siren detected!");
+        if(isFlashlightOn) {
+          _toggleFlashlight();
+        }
+        if(isVibrating) {
+          _stopVibration();
+        }
+      }
     }
   }
 
