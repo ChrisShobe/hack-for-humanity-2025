@@ -25,11 +25,21 @@ class AudioUploader {
         print("File not found at $filePath");
         return;
       }
-      String? mimeType = mime(filePath);
-      if (mimeType == null || !mimeType.startsWith("audio")) {
-        print("The file is not a valid audio file");
-        return;
-      }
+
+      String? mimeType;
+      mimeType = 'audio/wav';  // Set mime type to audio/wav
+
+      // String? mimeType = mime(filePath);
+      // if (mimeType == null || !mimeType.startsWith("audio")) {
+      //   print("The file is not a valid audio file. The type is: $mimeType");
+      //   return;
+      // }
+
+      // // Explicitly set the mimeType to audio/wav (or any desired audio type)
+      // if (mimeType != 'audio/wav') {
+      //   mimeType = 'audio/wav';  // Set mime type to audio/wav
+      // }
+
       final String serverUrlWithScheme = "http://$serverUrl/upload";  // Add "http://" if not present
       var request = http.MultipartRequest(
         'POST', Uri.parse(serverUrlWithScheme)  // Append the /upload path

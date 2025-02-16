@@ -41,6 +41,8 @@ dependencies:
   record: ^5.2.0
   permission_handler: ^11.3.1
   path_provider: ^2.0.0
+  encrypt: ^5.0.3
+  mime: ^1.0.0
 
 
 

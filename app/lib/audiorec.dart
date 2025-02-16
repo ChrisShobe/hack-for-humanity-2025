@@ -1,9 +1,13 @@
+import 'dart:io';
 import 'package:record/record.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:encrypt/encrypt.dart' as encrypt;
 
 class AudioRecorderService {
   final AudioRecorder _recorder = AudioRecorder();
   bool _isRecording = false;
+  final _key = encrypt.Key.fromUtf8('your32characterlongencryptionkey'); // AES key (32 chars for AES-256)
+  final _iv = encrypt.IV.fromLength(16); // Initialization Vector (IV)
 
   // Start the recording process
   Future<void> startRecording() async {
@@ -43,13 +47,38 @@ class AudioRecorderService {
         _isRecording = false;
         final path = await _recorder.stop();  // Stop and get the path where the file is saved
         print("Recording saved at: $path");
-        return path; // Returns the path where the recording was saved
+        if (path != null) {
+          print("Recording saved at: $path");
+          return await encryptFile(path); // Encrypt the file before returning
+        }
       }
       return null;
     } catch (e) {
       print("Error stopping recording: $e");
       return null;
     }
+  }
+
+  // Encrypt the recorded file
+  Future<String> encryptFile(String filePath) async {
+    final file = File(filePath);
+    final bytes = await file.readAsBytes();
+    
+    final encrypter = encrypt.Encrypter(encrypt.AES(_key, mode: encrypt.AESMode.cbc));
+    final encryptedData = encrypter.encryptBytes(bytes, iv: _iv);
+
+    // Save the encrypted file with an ".enc" extension
+    final encryptedFilePath = '$filePath.enc';
+    final encryptedFile = File(encryptedFilePath);
+    await encryptedFile.writeAsBytes(encryptedData.bytes);
+
+    print("File encrypted at: $encryptedFilePath");
+
+    // Optionally, you can delete the original file after encryption
+    await file.delete(); // Delete the original file
+    print("Original file deleted at: $filePath");
+
+    return encryptedFilePath;
   }
 
   bool get isRecording => _isRecording;
