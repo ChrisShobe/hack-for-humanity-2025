@@ -14,6 +14,10 @@ def allowed_file(filename):
     """Check if the file extension is allowed"""
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+@app.route('/', methods=['GET'])
+def check_server():
+    return jsonify({"message": "Server is up and running!"}), 200
+
 @app.route('/upload', methods=['POST'])
 def upload_file():
     """Handle file upload"""
