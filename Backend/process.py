@@ -8,7 +8,7 @@ from tqdm import tqdm
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
 import tensorflow as tf
-from tensorflow.keras import layers, models
+from tensorflow.keras import layers, models, regularizers
 import warnings
 import joblib
 
@@ -66,17 +66,6 @@ with tqdm(total=files_to_process, desc="Processing Audio Files") as pbar:
         
         pbar.update(1)
 
-# Optionally, display the first spectrogram
-if not df.empty:
-    first_spectrogram = df.iloc[0]["Spectrogram"]
-    print(first_spectrogram.shape)
-    plt.figure(figsize=(10, 4))
-    librosa.display.specshow(first_spectrogram, sr=sr, x_axis='time', y_axis='mel')
-    plt.colorbar(format='%+2.0f dB')
-    plt.title(f'Mel Spectrogram of {df.iloc[0]["Label"]}')
-    plt.tight_layout()
-    plt.show()
-
 # Preprocess the data for neural network input
 def pad_or_truncate_spectrogram(spectrogram, target_length=600):
     # If the spectrogram is shorter than the target length, pad it with zeros
@@ -93,31 +82,28 @@ X = np.array([pad_or_truncate_spectrogram(x) for x in df["Spectrogram"]])
 y = np.array(df["Label"])
 X = X / np.max(X)
 X = np.expand_dims(X, axis=-1)
-print(df['Label'].value_counts())
+
 label_encoder = LabelEncoder()
 y = label_encoder.fit_transform(y)
 
-# Limit the data for training and testing based on the percentage
+# Split the data first before any processing (avoid data leakage)
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-# Optionally, print sample details
-for i in range(len(X_train)):
-    spectogram_size = X_train[i].shape
-    label = label_encoder.inverse_transform([y_train[i]])[0]
-    print(f"Sample {i+1}: Spectogram Shape: {spectogram_size}, Label: {label}")
+# Data augmentation for the training set (if needed)
+# For now, we won't use data augmentation in this example, but you can add techniques like time-shifting or pitch-shifting later
 
-# Build the CNN model 
+# Build the CNN model with regularization and dropout
 model = models.Sequential([
     layers.InputLayer(input_shape=(X_train.shape[1], X_train.shape[2], 1)),
-    layers.Conv2D(32, (3, 3), activation='relu', padding='same'),
+    layers.Conv2D(32, (3, 3), activation='relu', padding='same', kernel_regularizer=regularizers.l2(0.05)),  # L2 regularization
     layers.MaxPooling2D((2, 2)),
-    layers.Conv2D(64, (3, 3), activation='relu', padding='same'),
+    layers.Conv2D(64, (3, 3), activation='relu', padding='same', kernel_regularizer=regularizers.l2(0.05)),  # L2 regularization
     layers.MaxPooling2D((2, 2)),
-    layers.Conv2D(128, (3, 3), activation='relu', padding='same'),
+    layers.Conv2D(128, (3, 3), activation='relu', padding='same', kernel_regularizer=regularizers.l2(0.05)),  # L2 regularization
     layers.MaxPooling2D((2, 2)),
     layers.Flatten(),
-    layers.Dense(256, activation='relu'),
-    layers.Dropout(0.5),
+    layers.Dense(256, activation='relu', kernel_regularizer=regularizers.l2(0.05)),  # L2 regularization
+    layers.Dropout(0.5),  # Dropout to prevent overfitting
     layers.Dense(len(np.unique(y)), activation='softmax')  # Output layer with softmax activation
 ])
 
@@ -131,6 +117,7 @@ history = model.fit(X_train, y_train, epochs=10, batch_size=32, validation_data=
 test_loss, test_acc = model.evaluate(X_test, y_test)
 print(f"Test Accuracy: {test_acc * 100:.2f}%")
 
+# Save the model
 model.save('urban_sound_cnn_model.h5')
 print("Model saved in normal TensorFlow format.")
 
@@ -138,7 +125,7 @@ print("Model saved in normal TensorFlow format.")
 converter = tf.lite.TFLiteConverter.from_keras_model(model)
 tflite_model = converter.convert()
 
-# Save the TFLite model 
+# Save the TFLite model
 with open('urban_sound_cnn_model.tflite', 'wb') as f:
     f.write(tflite_model)
 print("Model saved in TFLite format.")
