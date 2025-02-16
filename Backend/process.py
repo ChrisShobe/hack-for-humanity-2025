@@ -17,7 +17,10 @@ warnings.filterwarnings('ignore')
 csv_path = "C:/Users/cutie/.cache/kagglehub/datasets/rupakroy/urban-sound-8k/versions/1/UrbanSound8K.csv"
 audio_path = "C:/Users/cutie/.cache/kagglehub/datasets/rupakroy/urban-sound-8k/versions/1/UrbanSound8K/UrbanSound8K/audio"
 
-#Load CSV 
+# Percentage of files to process and train on
+percentage = 50  # Set this value to control the percentage (e.g., 50 means using 50% of the files)
+
+# Load CSV 
 df_csv = pd.read_csv(csv_path)
 
 # Initialize DataFrame
@@ -25,17 +28,20 @@ df = pd.DataFrame(columns=["Label", "Audio Length", "Audio Sample", "Spectrogram
 
 # Count total audio files for progress bar
 total_files = len(df_csv)
+files_to_process = int(total_files * (percentage / 100))  # Calculate the number of files to process based on percentage
 
-# Process audio files using CSV 
-with tqdm(total=total_files, desc="Processing Audio Files") as pbar:
-    for _, row in df_csv.iterrows():
+# Process audio files using CSV
+with tqdm(total=files_to_process, desc="Processing Audio Files") as pbar:
+    for idx, row in df_csv.iterrows():
+        if idx >= files_to_process:  # Stop after processing the desired percentage
+            break
         file_name = row['slice_file_name']
         fold = row['fold']
         label = row['class']
         
         # Construct file path
         file_path = os.path.join(audio_path, f"fold{fold}", file_name)
-        if os.path.exists(file_path):  # Ensure the file exists 
+        if os.path.exists(file_path):  # Ensure the file exists
             audio, sr = librosa.load(file_path, sr=None)  # Load audio
             audio_length = len(audio)  # Length of audio array
             if audio_length <= 0:
@@ -86,12 +92,15 @@ def pad_or_truncate_spectrogram(spectrogram, target_length=600):
 X = np.array([pad_or_truncate_spectrogram(x) for x in df["Spectrogram"]])
 y = np.array(df["Label"])
 X = X / np.max(X)
-X = np.expand_dims(X, axis=-1) 
+X = np.expand_dims(X, axis=-1)
 print(df['Label'].value_counts())
 label_encoder = LabelEncoder()
 y = label_encoder.fit_transform(y)
+
+# Limit the data for training and testing based on the percentage
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
+# Optionally, print sample details
 for i in range(len(X_train)):
     spectogram_size = X_train[i].shape
     label = label_encoder.inverse_transform([y_train[i]])[0]

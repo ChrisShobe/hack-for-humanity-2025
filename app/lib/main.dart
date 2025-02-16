@@ -57,7 +57,6 @@ class _MyHomePageState extends State<MyHomePage> {
       if(path == null) {print("there was an error and it didnt return a file path"); return;}
       MyClient.uploadAudioFile(path);
       print('Recording saved at: $path');
-
       setState(() => isRecording = false);
     }
   }

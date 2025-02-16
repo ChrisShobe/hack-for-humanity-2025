@@ -23,13 +23,11 @@ def upload_file():
     """Handle file upload"""
     if 'file' not in request.files:
         return jsonify({"error": "No file part"}), 400
-    
     file = request.files['file']
-    
     if file.filename == '':
         return jsonify({"error": "No selected file"}), 400
-    
     if file and allowed_file(file.filename):
+        #runInference(filepath)
         filepath = os.path.join(UPLOAD_FOLDER, file.filename)
         file.save(filepath)
         return jsonify({"message": "File successfully uploaded", "file_path": filepath}), 200
