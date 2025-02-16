@@ -70,26 +70,10 @@ class _MyHomePageState extends State<MyHomePage> {
       final path = await _audioRecorder.stopRecording();
       if(path == null) {print("there was an error and it didnt return a file path"); return;}
       //add logic here 
-      MyClient.uploadAudioFile(path);
       print('Recording saved at: $path');
       setState(() => isRecording = false);
-
-      // Check MIME type of the recorded file before processing
-      await Future.delayed(Duration(seconds: 1));
-      String? mimeType = lookupMimeType(path) ?? 'audio/wav'; // Default to 'audio/wav' if MIME type is null
-      print('MIME type: $mimeType');
-
-      // Encrypt the file using the method in AudioRecorderService
       final encryptedFilePath = await _audioRecorder.encryptFile(path);
-
-      await Future.delayed(Duration(seconds: 1));
-      mimeType = lookupMimeType(path) ?? 'audio/wav'; // Default to 'audio/wav' if MIME type is null
-      print('MIME type: $mimeType');
-
-      // Send the encrypted file to the server
-      await MyClient.uploadAudioFile(encryptedFilePath);
-    
-      
+      String result = await MyClient.uploadAudioFile(encryptedFilePath);
     }
   }
 
