@@ -14,11 +14,11 @@ import joblib
 
 warnings.filterwarnings('ignore')
 
-csv_path = "C:/Users/cutie/.cache/kagglehub/datasets/rupakroy/urban-sound-8k/versions/1/UrbanSound8K.csv"
-audio_path = "C:/Users/cutie/.cache/kagglehub/datasets/rupakroy/urban-sound-8k/versions/1/UrbanSound8K/UrbanSound8K/audio"
+csv_path = "/Users/shaunak/.cache/kagglehub/datasets/rupakroy/urban-sound-8k/versions/1/UrbanSound8K.csv"
+audio_path = "/Users/shaunak/.cache/kagglehub/datasets/rupakroy/urban-sound-8k/versions/1/UrbanSound8K/UrbanSound8K/audio"
 
 # Percentage of files to process and train on
-percentage = 20  # Set this value to control the percentage (e.g., 50 means using 50% of the files)
+percentage = 10 # Set this value to control the percentage (e.g., 50 means using 50% of the files)
 
 # Load CSV 
 df_csv = pd.read_csv(csv_path)
@@ -31,15 +31,10 @@ total_files = len(df_csv)
 files_to_process = int(total_files * (percentage / 100))  # Calculate the number of files to process based on percentage
 
 # Define augmentation function
-def augment_audio(audio, sr, pitch_shift_max=2, time_stretch_max=1.2):
-    # Apply pitch shift with a random number of semitones
-    pitch_shift = np.random.uniform(-pitch_shift_max, pitch_shift_max)
-    audio = librosa.effects.pitch_shift(audio, sr, n_steps=pitch_shift)
-    
-    # Apply time stretching with a random factor
-    stretch_factor = np.random.uniform(1.0, time_stretch_max)  # Speed-up or slow-down
-    audio = librosa.effects.time_stretch(audio, stretch_factor)
-    
+def augment_audio(audio, sr):
+    # Apply pitch shift augmentation
+    pitch_shift = np.random.uniform(-4, 4)  # Random pitch shift between -4 and 4 semitones
+    audio = librosa.effects.pitch_shift(y=audio, sr=sr, n_steps=pitch_shift)  # Explicitly named arguments
     return audio
 
 # Process audio files using CSV
@@ -115,29 +110,41 @@ model = models.Sequential([
     layers.MaxPooling2D((2, 2)),
     layers.Flatten(),
     layers.Dense(256, activation='relu', kernel_regularizer=regularizers.l2(0.05)),  # L2 regularization
-    layers.Dropout(0.5),  # Dropout to prevent overfitting
+    layers.Dropout(0.5),  
     layers.Dense(len(np.unique(y)), activation='softmax')  # Output layer with softmax activation
 ])
 
 # Compile the model
 model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
 
+print("Training labels (encoded):")
+print(np.unique(y_train))  # This will print the encoded class labels for training
+
+# Optionally, print the corresponding human-readable class labels
+print("Class labels (decoded):")
+print(label_encoder.inverse_transform(np.unique(y_train)))  # Print the decoded class labels
+
 # Train the model
 history = model.fit(X_train, y_train, epochs=10, batch_size=32, validation_data=(X_test, y_test))
+
+# After training, print the labels again to verify consistency
+print("\nLabels at the end of training:")
+print(np.unique(y_train))  # This will print the encoded class labels for training
+print(label_encoder.inverse_transform(np.unique(y_train)))  # Print the decoded class labels
 
 # Evaluate the model on the test set
 test_loss, test_acc = model.evaluate(X_test, y_test)
 print(f"Test Accuracy: {test_acc * 100:.2f}%")
 
 # Save the model
-model.save('urban_sound_cnn_model.h5')
+model.save('urban_sound_cnn_model.keras')
 print("Model saved in normal TensorFlow format.")
 
 # Convert the model to TFLite format
-converter = tf.lite.TFLiteConverter.from_keras_model(model)
-tflite_model = converter.convert()
+# converter = tf.lite.TFLiteConverter.from_keras_model(model)
+# tflite_model = converter.convert()
 
-# Save the TFLite model
-with open('urban_sound_cnn_model.tflite', 'wb') as f:
-    f.write(tflite_model)
-print("Model saved in TFLite format.")
+# # Save the TFLite model
+# with open('urban_sound_cnn_model.tflite', 'wb') as f:
+#     f.write(tflite_model)
+# print("Model saved in TFLite format.")

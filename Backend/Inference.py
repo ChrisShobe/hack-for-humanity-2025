@@ -5,7 +5,7 @@ from tensorflow.keras.models import load_model
 from sklearn.preprocessing import LabelEncoder
 
 # Load the model (Keras .h5 model)
-model = load_model('models/urban_sound_cnn_model.h5')
+model = load_model('models/urban_sound_cnn_model.keras')
 
 label_encoder = LabelEncoder()
 label_encoder.fit(['air_conditioner', 'car_horn', 'children_playing', 'dog_bark', 'drilling', 'engine_idling', 'gun_shot', 'jackhammer',
