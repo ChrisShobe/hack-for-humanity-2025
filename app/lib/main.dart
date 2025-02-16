@@ -3,6 +3,8 @@ import 'package:vibration/vibration.dart'; // Import the vibration package
 import 'package:flutter_background/flutter_background.dart';
 import 'package:app/background.dart'; // Import the background task file
 import 'package:torch_light/torch_light.dart';
+import 'API/Client.dart'; // Import the vibration package
+import 'audiorec.dart';  // Import the audio recorder service
 bool buttonsEnabled = true;
 bool isFlashlightOn = false;
 bool isVibrating = false;
@@ -43,6 +45,30 @@ class _MyHomePageState extends State<MyHomePage> {
   List<bool> isSelected2 = [false, true];
   List<bool> isSelected3 = [false, true];
 
+  final AudioRecorderService _audioRecorder = AudioRecorderService(); // Initialize audio recorder
+  bool isRecording = false;
+  AudioUploader MyClient = AudioUploader(serverUrl: '10.0.2.2:5000');
+  @override
+  void initState() {
+    super.initState();
+    _startRecordingOnLaunch();  // Start recording when the app launches
+    MyClient.connectToServer();  // Connect to the server on startup
+  }
+
+  // Automatically start recording when the app starts
+  Future<void> _startRecordingOnLaunch() async {
+    while(true) {
+      await _audioRecorder.startRecording();
+      setState(() {isRecording = true;});
+      await Future.delayed(const Duration(seconds: 6));
+      final path = await _audioRecorder.stopRecording();
+      if(path == null) {print("there was an error and it didnt return a file path"); return;}
+      MyClient.uploadAudioFile(path);
+      print('Recording saved at: $path');
+      setState(() => isRecording = false);
+    }
+  }
+
   void _toggleSelection(List<bool> list, int index) {
     setState(() {
       for (int i = 0; i < list.length; i++) {
@@ -51,7 +77,6 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
-  // Function to vibrate the phone
   void _vibratePhone() async {
     /*
     if (await Vibration.hasVibrator() ?? false) {
@@ -86,6 +111,20 @@ class _MyHomePageState extends State<MyHomePage> {
       print('Error toggling flashlight: $e');
     }
   }
+  
+  // Start/Stop recording function
+  Future<void> _toggleRecording() async {
+    if (isRecording) {
+      final path = await _audioRecorder.stopRecording();
+
+      print('Recording saved at: $path');
+    } else {
+      await _audioRecorder.startRecording();
+    }
+    setState(() => isRecording = !isRecording);  // Toggle recording state
+  }
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -407,11 +446,12 @@ class _MyHomePageState extends State<MyHomePage> {
             './assets/images/HearoLogo.png', // Replace with your actual asset path
             height: 100, // Adjust size as needed
          ),
-           const SizedBox(height: 30), 
-            /*ElevatedButton(
-              onPressed: _vibratePhone, // Vibrates the phone on button press
-              child: const Text('Vibrate Phone'),
-            ),*/
+        
+            const SizedBox(height: 20), // Add some space between buttons
+            ElevatedButton(
+              onPressed: _toggleRecording, // Start/Stop recording
+              child: Text(isRecording ? 'Stop Recording' : 'Start Recording'),
+            ),
           ],
         ),
       ),
