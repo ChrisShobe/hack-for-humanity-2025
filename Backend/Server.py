@@ -38,15 +38,13 @@ def upload_file():
     if 'file' not in request.files:
         print("No file part in the request.")  # Debugging statement
         return jsonify({"error": "No file part"}), 400
-    
     file = request.files['file']
-    
     if file.filename == '':
         print("No selected file.")  # Debugging statement
         return jsonify({"error": "No selected file"}), 400
-    
     if file and allowed_file(file.filename):
         print(f"File {file.filename} is valid. Proceeding with upload.")  # Debugging statement
+        #runInference(filepath)
         filepath = os.path.join(UPLOAD_FOLDER, file.filename)
         
         # Save the file to the specified location
