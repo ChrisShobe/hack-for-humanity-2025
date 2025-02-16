@@ -73,7 +73,7 @@ class _MyHomePageState extends State<MyHomePage> {
       print('Recording saved at: $path');
       setState(() => isRecording = false);
       final encryptedFilePath = await _audioRecorder.encryptFile(path);
-      String result = await MyClient.uploadAudioFile(encryptedFilePath);
+      await MyClient.uploadAudioFile(encryptedFilePath);
     }
   }
 

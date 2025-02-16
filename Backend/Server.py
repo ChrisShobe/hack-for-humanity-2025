@@ -1,12 +1,14 @@
 from flask import Flask, request, jsonify
 from Inference import run_inference
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+from cryptography.hazmat.primitives import padding
+from cryptography.hazmat.backends import default_backend
 import os
-from Crypto.Cipher import AES
-from Crypto.Util.Padding import unpad
 
 # Define your key and IV (must match Dart values)
-AES_KEY = "your32characterlongencryptionkey"  # 32 bytes (AES-256)
-AES_IV = " " * 16  # 16 bytes IV (same as Dart, ensure it's consistent)
+AES_KEY = b'your32characterlongencryptionkey'   # 32 bytes (AES-256)
+AES_IV = b'MyIVKey123456789'  # Exactly 16 bytes
+
 
 # Paths
 encrypted_file = "recording.wav.enc"
@@ -43,10 +45,11 @@ def upload_file():
     if file.filename == '':
         print("No selected file.")  # Debugging statement
         return jsonify({"error": "No selected file"}), 400
+    
     if file and allowed_file(file.filename):
         filepath = os.path.join(UPLOAD_FOLDER, file.filename)  # Move this line up here
         file.save(filepath)
-        
+        filepath = decrypt_file(filepath)
         response = run_inference(filepath)  # Call run_inference after saving the file
         
         return jsonify({"message": response, "file_path": filepath}), 200
@@ -54,33 +57,45 @@ def upload_file():
     print("Invalid file type received.")  # Debugging statement
     return jsonify({"error": "Invalid file type"}), 400
 
-def decrypt_file(input_file, output_file, key, iv):
-    print(f"Starting decryption for {input_file}")  # Debugging statement
-
+key = AES_KEY  # Must be 16, 24, or 32 bytes long
+iv = AES_IV # Must be 16 bytes long
+def decrypt_file(encrypted_file_path):
     try:
-        with open(input_file, "rb") as f:
-            encrypted_data = f.read()
-            print(f"Encrypted data read successfully. Size: {len(encrypted_data)} bytes.")  # Debugging statement
+        # Read the encrypted file (already saved by the upload route)
+        print("File size:", os.path.getsize(encrypted_file_path))
 
-        # Initialize AES cipher (same mode as in Dart)
-        cipher = AES.new(key.encode("utf-8"), AES.MODE_CBC, iv.encode("utf-8"))
-        print("AES cipher initialized.")  # Debugging statement
+        # Now read the saved file
+        with open(encrypted_file_path, 'rb') as enc_file:
+            encrypted_data = enc_file.read()
 
-        # Decrypt and remove padding
-        decrypted_data = unpad(cipher.decrypt(encrypted_data), AES.block_size)
-        print(f"Decryption successful. Decrypted data size: {len(decrypted_data)} bytes.")  # Debugging statement
+        # Create the AES cipher object
+        cipher = Cipher(algorithms.AES(key), modes.CBC(iv), backend=default_backend())
 
-        with open(output_file, "wb") as f:
-            f.write(decrypted_data)
-        
-        print(f"Decryption complete. File saved at: {output_file}")  # Debugging statement
+        # Create a decryptor
+        decryptor = cipher.decryptor()
+
+        # Decrypt the data
+        decrypted_data = decryptor.update(encrypted_data) + decryptor.finalize()
+
+        # Remove padding (same padding used during encryption)
+        unpadder = padding.PKCS7(algorithms.AES.block_size).unpadder()
+        unpadded_data = unpadder.update(decrypted_data) + unpadder.finalize()
+
+        # Save the decrypted file
+        decrypted_file_path = encrypted_file_path.rsplit('.', 1)[0]  # Removes the extension
+        decrypted_file_path = f'{decrypted_file_path}'  # Or use `.wav` if preferred
+
+        with open(decrypted_file_path, 'wb') as dec_file:
+            dec_file.write(unpadded_data)
+
+        print(f"File decrypted and saved at: {decrypted_file_path}")
+        os.remove(encrypted_file_path)
+        return decrypted_file_path
     
     except Exception as e:
-        print(f"Error during decryption: {e}")  # Debugging statement
-        return jsonify({"error": f"Decryption failed: {str(e)}"}), 500
+        print(f"An error occurred during decryption: {e}")
+        return None
 
-# Run decryption
-#decrypt_file(encrypted_file, decrypted_file, AES_KEY, AES_IV)
 
 if __name__ == '__main__':
     print("Starting Flask server...")  # Debugging statement

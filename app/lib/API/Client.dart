@@ -19,19 +19,22 @@ class AudioUploader {
     }
   }
 
-
   Future<String> uploadAudioFile(String filePath) async {
     try {
       File file = File(filePath);
+      print("Uploading $file");
       if (!file.existsSync()) {
         print("File not found at $filePath");
         return "No file found";
       }
+
       String? mimeType = mime(filePath);
-      if (mimeType == null || !mimeType.startsWith("audio")) {
-        print("The file is not a valid audio file");
-        return "invalid audio file";
-      }
+      print("mimetype is $mimeType");
+      if (mimeType == null) {print("Error with mimetype");return "ERROR";};
+      // if (mimeType == null || !mimeType.startsWith("audio")) {
+      //   print("The file is not a valid audio file");
+      //   return "invalid audio file";
+      // }
       final String serverUrlWithScheme = "http://$serverUrl/upload";  // Add "http://" if not present
       var request = http.MultipartRequest(
         'POST', Uri.parse(serverUrlWithScheme)  // Append the /upload path
