@@ -46,18 +46,16 @@ class _MyHomePageState extends State<MyHomePage> {
     _startRecordingOnLaunch();  // Start recording when the app launches
     MyClient.connectToServer();  // Connect to the server on startup
   }
-  
+
   // Automatically start recording when the app starts
   Future<void> _startRecordingOnLaunch() async {
     while(true) {
       await _audioRecorder.startRecording();
-      setState(() {isRecording = true;  // Update UI to reflect that recording has started
-      });
-      // Wait for 3 seconds
+      setState(() {isRecording = true;});
       await Future.delayed(const Duration(seconds: 3));
-
-      // Stop recording and save the file
       final path = await _audioRecorder.stopRecording();
+      if(path == null) {print("there was an error and it didnt return a file path"); return;}
+      MyClient.uploadAudioFile(path);
       print('Recording saved at: $path');
 
       setState(() => isRecording = false);
@@ -82,8 +80,7 @@ class _MyHomePageState extends State<MyHomePage> {
   Future<void> _toggleRecording() async {
     if (isRecording) {
       final path = await _audioRecorder.stopRecording();
-      if(path == null) {print("there was an error and it didnt return a file path"); return;}
-      MyClient.uploadAudioFile(path);
+
       print('Recording saved at: $path');
     } else {
       await _audioRecorder.startRecording();
