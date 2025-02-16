@@ -18,7 +18,7 @@ csv_path = "C:/Users/cutie/.cache/kagglehub/datasets/rupakroy/urban-sound-8k/ver
 audio_path = "C:/Users/cutie/.cache/kagglehub/datasets/rupakroy/urban-sound-8k/versions/1/UrbanSound8K/UrbanSound8K/audio"
 
 # Percentage of files to process and train on
-percentage = 50  # Set this value to control the percentage (e.g., 50 means using 50% of the files)
+percentage = 10  # Set this value to control the percentage (e.g., 50 means using 50% of the files)
 
 # Load CSV 
 df_csv = pd.read_csv(csv_path)
