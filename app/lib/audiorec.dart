@@ -7,7 +7,7 @@ class AudioRecorderService {
   final AudioRecorder _recorder = AudioRecorder();
   bool _isRecording = false;
   final _key = encrypt.Key.fromUtf8('your32characterlongencryptionkey'); // AES key (32 chars for AES-256)
-  final _iv = encrypt.IV.fromLength(16); // Initialization Vector (IV)
+  final _iv = encrypt.IV.fromUtf8('MyIVKey123456789');  // Exactly 16 chars
 
   // Start the recording process
   Future<void> startRecording() async {
@@ -49,7 +49,7 @@ class AudioRecorderService {
         print("Recording saved at: $path");
         if (path != null) {
           print("Recording saved at: $path");
-          return await encryptFile(path); // Encrypt the file before returning
+          return await path; // Encrypt the file before returning
         }
       }
       return null;
